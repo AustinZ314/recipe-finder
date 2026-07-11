@@ -90,3 +90,7 @@ typings/
 
 # Electron-Forge
 out/
+
+# Spoonacular API response files - temporary
+info_instructions.txt
+nutrition_instructions.txt
