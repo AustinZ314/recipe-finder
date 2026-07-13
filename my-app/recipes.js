@@ -7,7 +7,7 @@ const dbPath = path.join(__dirname, 'assets', 'starter.db');
 const db = new Database(dbPath, {verbose: console.log });
 
 /* API CALL PARAMETERS */
-const CUISINE = "chinese";
+const CUISINE = "asian";
 const BATCH_SIZE = 100; // Max recipes to return in one call (1-100)
 const MAX_CALLS = 1; // How many calls to make to api
 
