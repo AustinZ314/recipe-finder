@@ -10,7 +10,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "echo \"No linting configured\""
+    "lint": "echo \"No linting configured\"",
+    "harvest": "npm rebuild better-sqlite3 && node --env-file=.env recipes.js && npx electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
   "author": "clairie",
@@ -29,7 +30,7 @@
     "vite": "^5.4.21"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2",
+    "better-sqlite3": "^12.11.1",
     "electron-squirrel-startup": "^1.0.1"
   }
 }

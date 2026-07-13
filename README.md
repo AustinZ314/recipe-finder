@@ -12,8 +12,8 @@ API_KEY=real_apikey
 ```
 
 ### 2. Run the Harvester
-Run the script using Node's env flag:
+Run the script using one of the scripts in package.json. This is because the SQLite database needs to be compiled differently for terminal scripts than for desktop apps. This command switches between them automatically so no other commands are needed.
 
 ```bash
-node --env-file=.env recipes.js
+npm run harvest
 ```
