@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
-import path from 'node:path';
+import path, { join } from 'node:path';
 import started from 'electron-squirrel-startup';
 import Database from 'better-sqlite3';
 
@@ -42,6 +42,7 @@ const createWindow = () => {
   });
 };
 
+// test frontend accessing db
 ipcMain.handle('get-recipes', (event, limit) => {
   const stmt = db.prepare(`
     SELECT id, title, ready_in_minutes, calories, price_per_serving
@@ -51,6 +52,7 @@ ipcMain.handle('get-recipes', (event, limit) => {
   return stmt.all(limit);
 })
 
+// test accepting input from frontend
 ipcMain.handle('search-recipes', (event, keyword) => {
   const searchTerm = `%${keyword}%`;
   const stmt = db.prepare(`
@@ -60,6 +62,62 @@ ipcMain.handle('search-recipes', (event, keyword) => {
     LIMIT 30
   `);
   return stmt.all(searchTerm, searchTerm);
+});
+
+ipcMain.handle('find-recipes', (event, filters = {}) => {
+  const {
+    pantry = [],
+    maxTime = null,
+    maxCalories = null,
+    maxPrice = null,
+    cuisine = null,
+    isVegetarian = false,
+    isVegan = false,
+    isGlutenFree = false,
+    isDairyFree = false,
+    limit = 20
+  } = filters;
+
+  const whereClauses = ['1=1'];
+  const params = [];
+
+  if (maxTime) { whereClauses.push('r.ready_in_minutes <= ?'); params.push(maxTime); }
+  if (maxCalories) { whereClauses.push('r.calories <= ?'); params.push(maxCalories); }
+  if (maxPrice) { whereClauses.push('r.price_per_serving <= ?'); params.push(maxPrice); }
+  if (cuisine) { whereClauses.push('r.cuisines LIKE ?'); params.push(`%${cuisine}%`); }
+  if (isVegetarian) whereClauses.push('r.is_vegetarian = 1');
+  if (isVegan) whereClauses.push('r.is_vegan = 1');
+  if (isGlutenFree) whereClauses.push('r.is_gluten_free = 1');
+  if (isDairyFree) whereClauses.push('r.is_dairy_free = 1');
+
+  let selectScoreSql = '0 AS match_score';
+  let joinSql = '';
+
+  if (pantry.length > 0) {
+    const scoreConditions = pantry.map(() => `i.name LIKE ?`).join(' OR ');
+    pantry.forEach(item => params.unshift(`%${item.trim()}%`));
+    selectScoreSql = `COUNT(DISTINCT CASE WHEN (${scoreConditions}) THEN i.id END) AS match_score`
+    joinSql = 'LEFT JOIN ingredients i ON r.id = i.recipe_id';
+  }
+
+  const sql = `
+    SELECT r.id r.title r.ready_in_minutes, r.price_per_serving, r.calores, r.protein_g, r.cuisines, ${selectScoreSql}
+    FROM recipes r ${joinSql}
+    WHERE ${whereClauses.join(' AND ')}
+    GROUP BY r.id
+    ORDER BY match_scire DESC, r.ready_in_minutes ASC
+    LIMIT ?
+  `;
+
+  params.push(limit);
+
+  try {
+    const stmt = db.prepare(sql);
+    return stmt.all(...params);
+  } catch (err) {
+    console.error("Database query failed: ", err);
+    return [];
+  }
 });
 
 ipcMain.handle('get-recipe-details', (event, recipeId) => {
