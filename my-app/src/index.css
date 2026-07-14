@@ -52,32 +52,6 @@ body {
   position: relative; 
 }
 
-/* 2. The Hover Overlay Layer
-.kitchen-container::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('graphics/kitchen-highlighted.png'); 
-
-  opacity: 0;
-  transition: opacity 1;
-
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  
-  pointer-events: none; 
-  z-index: 1; 
-}
-
-3. The Magic Shift: When hovering the button, fade in the container's overlay
-.kitchen-container:has(.kitchen-btn:hover)::after {
-  opacity: 1;
-}
-*/
-
 /* 2. The Button Layer: Sits invisibly exactly over the container dimensions */
 .kitchen-btn {
   background: transparent;
@@ -114,4 +88,273 @@ body {
 .kitchen-btn .button-path:hover {
   opacity: 0.12; /* Adjust this number to make the hover highlight brighter or dimmer */
   transition: opacity 0.15s ease-in-out;
+}
+
+/* --- 1. The Full Screen Dimming Layer --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7); /* Dims the kitchen background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100; /* Forces it to sit on top of everything else */
+}
+
+/* Hidden state utility class */
+.modal-overlay.hidden {
+  display: none;
+}
+
+/* --- 2. The Main Popup Box Container --- */
+/* 1. Define your local font file mapping */
+@font-face {
+  font-family: 'Pixelify Sans';
+  /* Example: if the font file is inside a folder named 'fonts' next to your index.css */
+  src: url('graphics/PixelifySans.ttf') format('truetype');
+  
+  /* If the font file is in the exact same folder as index.css, just use:
+     src: url('PressStart2P-Regular.ttf') format('truetype'); */
+     
+  font-weight: normal;
+  font-style: normal;
+}
+
+.entry-box-modal {
+  background-color: rgba(234, 216, 207);
+  
+  /* Give it a thick, blocky pixel border instead of smooth lines */
+  border: 4px solid rgba(187, 156, 141);
+  border-radius: 0px; /* Remove rounded corners to keep it blocky */
+  
+  width: 420px; /* Made slightly wider to account for wide pixel fonts */
+  max-height: 500px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 0 4px rgba(136, 114, 103); /* Secondary outer pixel border trick */
+  
+  /* CRITICAL: Apply the pixel font and strip browser smoothing */
+  font-family: 'Pixelify Sans', monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-smooth: never;
+  color: #fff;
+}
+
+/* --- THE NEW TOP-RIGHT "X" BUTTON --- */
+.modal-close-x {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: color 0.1s ease;
+}
+
+.modal-close-x:hover {
+  color: rgba(174, 103, 88); /* Turns a soft red on hover, like a native window close button */
+}
+
+.modal-title {
+  margin-top: 0;
+  font-size: 1.2rem;
+  border-bottom: 1px solid rgba(187, 156, 141);
+  padding-bottom: 10px;
+}
+
+/* --- 3. The Scrollable Entries Area --- */
+.entries-list {
+  flex-grow: 1;
+  overflow-y: auto; /* Adds the scrollbar when text overflows */
+  margin: 15px 0;
+  padding: 5px;
+  background-color: rgba(187, 156, 141);
+  border-radius: 4px;
+  border: 1px solid rgba(187, 156, 141);
+  max-height: 300px;
+}
+
+/* Individual text items inside the scrollable list */
+.entry-item {
+  padding: 8px;
+  border-bottom: 1px solid rgba(187, 156, 141);
+  font-size: 0.95rem;
+}
+
+/* --- 4. Input Fields and Buttons Layout --- */
+.input-container {
+  display: flex;
+  gap: 10px;
+}
+
+.entry-input {
+  flex-grow: 1;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(187, 156, 141);
+  background-color: rgba(187, 156, 141);
+  outline: none;
+  font-family: 'Pixelify Sans', monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-smooth: never;
+  color: #fff;
+  font-size: 18px;
+}
+
+.modal-btn {
+  padding: 10px 15px;
+  background-color: rgba(174, 103, 88);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  font-family: 'Pixelify Sans', monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-smooth: never;
+  color: #fff;
+  font-size: 18px;
+}
+
+.modal-btn:hover {
+  background-color: #357ABD;
+}
+
+.close-modal-btn {
+  background-color: rgba(188, 212, 151);
+  margin-top: 10px;
+  font-family: 'Pixelify Sans', monospace;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: none;
+  font-smooth: never;
+  color: #fff;
+  font-size: 18px;
+}
+
+.close-modal-btn:hover {
+  background-color: rgb(161, 183, 129);
+}
+
+/* --- SCREEN SWITCHING ARCHITECTURE --- */
+.screen-view {
+  width: 100vw;
+  height: calc(100vh - 45px); /* Offsets the 45px titlebar height */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Reusable hidden toggle utility class */
+.hidden {
+  display: none !important;
+}
+
+/* --- WELCOME SCREEN STYLING --- */
+#welcomePage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+
+  /* 1. Set the initial image as the fallback */
+  background-image: url('graphics/welcome.png'); 
+  background-position: bottom; 
+  background-repeat: no-repeat; 
+
+  /* 2. Link the animation name, duration, and set it to loop forever */
+  /* "step-end" creates a sudden snap effect—perfect for retro pixel art! */
+  animation: pixelAnimation 0.8s infinite step-end; 
+
+  /* Optional: keeps pixel art sharp if your assets are low-res */
+  image-rendering: pixelated; 
+}
+
+/* --- 3. THE ANIMATION TIMELINE --- */
+@keyframes pixelAnimation {
+  0% {
+    background-image: url('graphics/welcome.png');
+  }
+  50% {
+    background-image: url('graphics/welcome2.png'); /* Swaps to frame 2 halfway through */
+  }
+  100% {
+    background-image: url('graphics/welcome.png');
+  }
+}
+
+.welcome-content {
+  width: 500px;
+  height: 700px;
+  background-color: transparent; 
+  margin: 0 auto; 
+  position: relative; 
+}
+
+/* The centered Enter Button */
+/*.welcome-btn {
+  padding: 14px 30px;
+  font-size: 1.1rem;
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
+  transition: all 0.15s ease-in-out;
+}
+
+.welcome-btn:hover {
+  background-color: #357ABD;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(74, 144, 226, 0.4);
+}*/
+
+/* 2. The Button Layer: Sits invisibly exactly over the container dimensions */
+.welcome-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  outline: none;
+  cursor: default; /* Keeps the mouse normal over empty/black spaces */
+
+  width: 100%;
+  height: 100%;
+}
+
+/* 3. The SVG Mask Wrapper */
+.welcome-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 4. The Active Interactive Zone */
+.welcome-btn .button-path {
+  fill: #ffffff; 
+  opacity: 0; /* Hidden by default so your crisp pixel art underneath shows clear */
+  
+  /* CRITICAL: Ignores the transparent/dead space around the furniture pieces 
+     and only fires clicks on the exact shapes mapped in renderer.js */
+  pointer-events: visiblePainted; 
+  cursor: pointer; /* Swaps the cursor to a pointer ONLY when hovering over the valid shape */
+}
+
+/* Optional Hover feedback: Gives a glowing overlay highlight ONLY to the kitchen shape */
+.welcome-btn .button-path:hover {
+  opacity: 0.12; /* Adjust this number to make the hover highlight brighter or dimmer */
+  transition: opacity 0.15s ease-in-out;
+}
+
+.welcome-btn:active {
+  transform: translateY(0);
 }
